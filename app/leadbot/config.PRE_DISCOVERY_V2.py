@@ -1,0 +1,70 @@
+from __future__ import annotations
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
+
+@dataclass(frozen=True)
+class City:
+    name: str
+    lat: float
+    lon: float
+
+CITIES = [
+    City("Aubrey", 33.3043, -96.9861),
+    City("Little Elm", 33.1626, -96.9375),
+    City("Prosper", 33.2362, -96.8011),
+    City("Denton", 33.2148, -97.1331),
+    City("Frisco", 33.1507, -96.8236),
+    City("McKinney", 33.1972, -96.6398),
+    City("Celina", 33.3246, -96.7844),
+]
+
+QUERY_TEMPLATES = [
+    'site:facebook.com/groups ("need concrete" OR "looking for concrete" OR "concrete quote" OR "concrete contractor")',
+    'site:facebook.com/groups ("driveway extension" OR "patio extension" OR "concrete slab" OR "concrete sub")',
+    '("need concrete" OR "looking for concrete" OR "concrete contractor" OR "concrete crew" OR "concrete quote") (driveway OR patio OR slab OR sidewalk)',
+    '("driveway extension" OR "patio extension" OR "replace driveway" OR "concrete pad" OR "stamped concrete")',
+    '("concrete sub" OR "foundation subcontractor" OR "concrete foundation" OR "concrete crew needed") (home OR residential OR custom)',
+    '(pergola OR "patio cover" OR pool OR shed OR garage OR "outdoor kitchen" OR "basketball pad") (concrete OR slab OR footing)',
+]
+
+DIRECT_INTENT_TERMS = [
+    "need concrete", "looking for concrete", "concrete contractor", "concrete crew",
+    "concrete quote", "need a quote", "need quote", "need estimate", "looking for estimates",
+    "driveway extension", "patio extension", "replace driveway", "concrete slab",
+    "concrete sub", "sub needed", "crew needed", "foundation subcontractor",
+    "ready to pour", "form and pour", "needs to be poured", "looking to lay",
+    "looking for a contractor", "looking for someone", "need price", "asap", "this week", "bid this", "price this",
+]
+CONCRETE_TERMS = [
+    "concrete", "driveway", "patio", "foundation", "slab", "sidewalk", "flatwork",
+    "stamped", "salt finish", "broom finish", "walkway", "approach", "footing",
+    "pool deck", "rv pad", "garage slab", "shop slab", "equipment pad",
+]
+AD_TERMS = [
+    "we offer concrete", "our concrete services", "free estimates", "licensed and insured",
+    "serving dfw", "call us today", "we specialize in", "family owned", "financing available",
+    "book your estimate", "concrete company serving",
+]
+
+DB_PATH = Path(os.getenv("DB_PATH", "data/leadbot.db"))
+# User-requested capture cadence: every 30 minutes.
+SCAN_INTERVAL_SECONDS = int(os.getenv("SCAN_INTERVAL_SECONDS", "1800"))
+# Repeat reminders every 48 hours until the lead is clicked/reviewed or its status changes.
+REMINDER_INTERVAL_SECONDS = int(os.getenv("REMINDER_INTERVAL_SECONDS", str(48 * 60 * 60)))
+HOT_ALERT_SCORE = int(os.getenv("HOT_ALERT_SCORE", "78"))
+WARM_SCORE = int(os.getenv("WARM_SCORE", "58"))
+BRAVE_MAX_RESULTS = max(1, min(20, int(os.getenv("BRAVE_MAX_RESULTS", "20"))))
+BRAVE_TIMEOUT_SECONDS = int(os.getenv("BRAVE_TIMEOUT_SECONDS", "20"))
+JSON_DROP_DIR = Path(os.getenv("JSON_DROP_DIR", "data/inbox"))
+
+SOCIAL_DOMAINS={"facebook.com","www.facebook.com","m.facebook.com","tiktok.com","www.tiktok.com","nextdoor.com","www.nextdoor.com","instagram.com","www.instagram.com"}
+CONTACTABLE_ONLY_ALERTS=os.getenv("CONTACTABLE_ONLY_ALERTS","true").lower()=="true"
+WEBHOOK_SHARED_SECRET=os.getenv("WEBHOOK_SHARED_SECRET","")
+META_VERIFY_TOKEN=os.getenv("META_VERIFY_TOKEN","")
+META_APP_SECRET=os.getenv("META_APP_SECRET","")
+DEEP_FETCH_ENABLED=os.getenv("DEEP_FETCH_ENABLED","true").lower()=="true"
+DEEP_FETCH_TIMEOUT_SECONDS=int(os.getenv("DEEP_FETCH_TIMEOUT_SECONDS","5"))

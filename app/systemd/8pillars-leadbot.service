@@ -1,0 +1,12 @@
+[Unit]
+Description=8 Pillars Residential Concrete LeadBot
+After=network-online.target
+[Service]
+Type=simple
+WorkingDirectory=/opt/8pillars-leadbot
+EnvironmentFile=/opt/8pillars-leadbot/.env
+ExecStart=/opt/8pillars-leadbot/.venv/bin/python -m leadbot.main watch
+Restart=always
+RestartSec=10
+[Install]
+WantedBy=multi-user.target

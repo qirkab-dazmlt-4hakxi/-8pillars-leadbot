@@ -1,0 +1,42 @@
+8 PILLARS RESIDENTIAL CONCRETE LEADBOT v3.1 — TEST REPORT
+Date: 2026-08-09
+
+Core behavior:
+- 30-minute scan cadence configured: PASS
+- 48-hour untouched reminder cadence: PASS
+- Exact URL/source-ID deduplication: PASS
+- Same contractor + different project is preserved: PASS
+- Phone/email/address extraction: PASS
+- Dimensions/SF/scope extraction: PASS
+- Ad-vs-buyer classifier: PASS
+- HOT/WARM scoring: PASS
+
+Deep social/contact behavior:
+- TikTok public username extraction: PASS
+- TikTok-focused public search adapter: COMPILE/INTEGRATION PASS (requires Brave API key for live network test)
+- Nextdoor Search Posts adapter incl. comments: UNIT PASS (requires approved Nextdoor OAuth token for live network test)
+- Authorized TikTok business-DM payload ingestion: PASS
+- Meta Messenger/Instagram business-DM payload ingestion: PASS
+- Meta webhook verification endpoint: PASS
+- Meta X-Hub-Signature-256 verification code: PASS
+- Public social-post contactability classification: PASS
+- Inbound DM contactability = DIRECT_DM: PASS
+- Social sites are excluded from generic HTML deep-fetch bypass: PASS
+- Ordinary public webpage deep-enrichment: COMPILE PASS
+- Contactable-only dashboard/alert policy: PASS
+- Optional dashboard Basic Auth: COMPILE/ROUTE PASS
+
+Automated test suite: 17/17 PASS
+Built-in end-to-end self-test: PASS
+Webhook smoke test:
+- TikTok/social DM POST returned HTTP 200 and inserted lead: PASS
+- Meta verification challenge returned HTTP 200/challenge: PASS
+
+External credentials required for live production access:
+- Brave Search API key
+- Approved Nextdoor API access/token
+- Meta business app/Page/Instagram credentials for business DMs
+- TikTok Business Messaging API authorization for TikTok DMs
+- SMTP/Twilio credentials for outbound alerts (optional)
+
+Important: No test claims access to private social content or hidden personal contact information. The system uses authorized business messages, approved APIs, public source content, and explicit project contact details.
