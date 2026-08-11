@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+load_dotenv()
 
 @dataclass(frozen=True)
 class City:
@@ -23,12 +23,12 @@ CITIES = [
 ]
 
 BUYER_QUERY_TEMPLATES = [
-    'site:reddit.com ("need" OR "looking for" OR "recommend") ("concrete" OR "driveway" OR "patio") {city} Texas',
-    'site:facebook.com/groups ("need" OR "looking for" OR "recommend") ("concrete" OR "driveway" OR "patio") {city} Texas',
-    '("need someone" OR "looking for someone" OR "anyone know" OR "recommend someone") ("concrete" OR "driveway" OR "patio") {city} Texas',
-    '("my driveway" OR "our driveway" OR "my patio" OR "our patio") (replace OR repair OR extend OR pour OR estimate) concrete {city} Texas',
+    '("need someone" OR "looking for someone" OR "who can" OR "anyone know") concrete driveway patio slab {city} Texas',
+    '("recommend" OR "recommendation" OR "looking for recommendations") concrete driveway patio contractor {city} Texas',
+    '("need quote" OR "need estimate" OR "getting estimates" OR "price this") concrete driveway patio slab {city} Texas',
+    '("my driveway" OR "our driveway" OR "my patio" OR "our patio") concrete replace extend repair pour {city} Texas',
     '("contractor backed out" OR "contractor ghosted" OR "need another contractor" OR "ready to pour") concrete {city} Texas',
-    '("concrete sub needed" OR "concrete crew needed" OR "foundation crew needed" OR "looking for concrete subs") {city} Texas',
+    '("concrete sub needed" OR "concrete crew needed" OR "foundation crew" OR "looking for subs") {city} Texas',
 ]
 
 QUERY_TEMPLATES = [

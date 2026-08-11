@@ -23,7 +23,7 @@ def scan():
 
     for city,template in pairs:
             q=f'({template}) "{city.name}" Texas';headers={"Accept":"application/json","Accept-Encoding":"gzip","Cache-Control":"no-cache","X-Subscription-Token":key,"X-Loc-Lat":str(city.lat),"X-Loc-Long":str(city.lon),"X-Loc-City":city.name,"X-Loc-State":"TX","X-Loc-Country":"US","X-Loc-Timezone":"America/Chicago"}
-            params={"q":q,"country":"US","search_lang":"en","ui_lang":"en-US","count":BRAVE_MAX_RESULTS,"safesearch":"moderate","text_decorations":False,"extra_snippets":True}
+            params={"q":q,"country":"US","search_lang":"en","ui_lang":"en-US","count":BRAVE_MAX_RESULTS,"freshness":"pd","safesearch":"moderate","text_decorations":False,"extra_snippets":True}
             r=requests.get(ENDPOINT,headers=headers,params=params,timeout=BRAVE_TIMEOUT_SECONDS)
             if r.status_code==429:return out
             r.raise_for_status();results=((r.json().get("web") or {}).get("results") or [])
