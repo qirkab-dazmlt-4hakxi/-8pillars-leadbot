@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import os
 import requests
+from time import monotonic
+
+from leadbot_v2.core.source_health import SourceCircuitBreaker
+from leadbot_v2.core.health_store import HealthStore
 
 from leadbot_v2.core import LeadIntelligenceRecord
 from leadbot_v2.discovery.adaptive import AdaptiveQueryEngine
@@ -25,6 +29,13 @@ class BraveV2Discovery:
         )
 
         self.engine = AdaptiveQueryEngine(queries)
+        self.breaker = SourceCircuitBreaker(
+            failure_threshold=3,
+            cooldown_seconds=60,
+        )
+
+        self.health_store = HealthStore()
+        self.health_store.load_into(self.breaker)
 
     def search(
         self,
@@ -83,26 +94,52 @@ class BraveV2Discovery:
             if query.source == "web":
                 q += NEGATIVES
 
-            response = requests.get(
-                ENDPOINT,
-                headers={
-                    "Accept": "application/json",
-                    "X-Subscription-Token": key,
-                },
-                params={
-                    "q": q,
-                    "country": "US",
-                    "search_lang": "en",
-                    "ui_lang": "en-US",
-                    "count": 20,
-                    "safesearch": "moderate",
-                    "text_decorations": False,
-                    "extra_snippets": True,
-                },
-                timeout=20,
-            )
+            source_name = f"brave:{query.source}"
 
-            response.raise_for_status()
+            if not self.breaker.allow_request(source_name):
+                continue
+
+            started = monotonic()
+
+            try:
+                response = requests.get(
+                    ENDPOINT,
+                    headers={
+                        "Accept": "application/json",
+                        "X-Subscription-Token": key,
+                    },
+                    params={
+                        "q": q,
+                        "country": "US",
+                        "search_lang": "en",
+                        "ui_lang": "en-US",
+                        "count": 20,
+                        "safesearch": "moderate",
+                        "text_decorations": False,
+                        "extra_snippets": True,
+                    },
+                    timeout=20,
+                )
+
+                response.raise_for_status()
+
+                latency_ms = (
+                    monotonic() - started
+                ) * 1000.0
+
+                self.breaker.record_success(
+                    source_name,
+                    latency_ms=latency_ms,
+                )
+                self.health_store.save(self.breaker)
+
+            except Exception as exc:
+                self.breaker.record_failure(
+                    source_name,
+                    error=exc,
+                )
+                self.health_store.save(self.breaker)
+                continue
 
             web = response.json().get("web") or {}
 

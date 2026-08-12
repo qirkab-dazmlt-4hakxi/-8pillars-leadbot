@@ -1,3 +1,58 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+
+
+class IntentLabel(str, Enum):
+    HOMEOWNER_READY_BUYER = "homeowner_ready_buyer"
+    HOMEOWNER_RESEARCHING = "homeowner_researching"
+    RECOMMENDATION_REQUEST = "recommendation_request"
+
+    COMMERCIAL_BUYER = "commercial_buyer"
+    GC_BID_REQUEST = "gc_bid_request"
+    SUBCONTRACT_REQUEST = "subcontract_request"
+    PROPERTY_MANAGER_REQUEST = "property_manager_request"
+    DEVELOPER_REQUEST = "developer_request"
+
+    CONTRACTOR_AD = "contractor_ad"
+    DIRECTORY = "directory"
+    LEAD_RESELLER = "lead_reseller"
+    MARKETING_CONTENT = "marketing_content"
+
+    DIY_INFORMATION = "diy_information"
+    CLEANUP_ONLY = "cleanup_only"
+    DEMOLITION_ONLY = "demolition_only"
+    NON_CONCRETE = "non_concrete"
+
+    STALE_REQUEST = "stale_request"
+    LOCATION_CONFLICT = "location_conflict"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class IntentEvidence:
+    label: IntentLabel
+    confidence: float
+    evidence_text: str
+    source: str
+    polarity: int = 1
+
+
+@dataclass
+class IntentAssessment:
+    labels: dict[IntentLabel, float] = field(default_factory=dict)
+    evidence: list[IntentEvidence] = field(default_factory=list)
+
+    buyer_probability: float = 0.0
+    seller_probability: float = 0.0
+    ambiguity: float = 1.0
+
+    contradiction: bool = False
+    contradiction_reason: str | None = None
+
+    final_label: IntentLabel = IntentLabel.UNKNOWN
+    decision_confidence: float = 0.0
 
 
 BUYER_LABELS = {
@@ -18,6 +73,14 @@ SELLER_LABELS = {
     IntentLabel.MARKETING_CONTENT,
 }
 
+BLOCKING_LABELS = {
+    IntentLabel.CLEANUP_ONLY,
+    IntentLabel.DIY_INFORMATION,
+    IntentLabel.NON_CONCRETE,
+    IntentLabel.STALE_REQUEST,
+    IntentLabel.LOCATION_CONFLICT,
+}
+
 
 class IntentEnsemble:
     def assess(
@@ -25,18 +88,19 @@ class IntentEnsemble:
         evidence: list[IntentEvidence],
     ) -> IntentAssessment:
         result = IntentAssessment(evidence=list(evidence))
-
         scores: dict[IntentLabel, float] = {}
 
         for item in evidence:
             current = scores.get(item.label, 0.0)
 
-            # Multiple independent pieces of evidence increase confidence,
-            # but never beyond 1.0.
             contribution = item.confidence * item.polarity
+
             scores[item.label] = max(
                 0.0,
-                min(1.0, current + contribution * (1.0 - current)),
+                min(
+                    1.0,
+                    current + contribution * (1.0 - current),
+                ),
             )
 
         result.labels = scores
@@ -54,7 +118,27 @@ class IntentEnsemble:
         result.buyer_probability = buyer
         result.seller_probability = seller
 
-        # Detect strong disagreement instead of silently choosing a side.
+        blocking_scores = {
+            label: scores.get(label, 0.0)
+            for label in BLOCKING_LABELS
+        }
+
+        blocking_label = max(
+            blocking_scores,
+            key=blocking_scores.get,
+        )
+
+        blocking_score = blocking_scores[blocking_label]
+
+        # Strong exclusion evidence overrides generic language such as
+        # "need someone" when the actual scope is cleanup, DIY, stale,
+        # non-concrete, or geographically invalid.
+        if blocking_score >= 0.85:
+            result.final_label = blocking_label
+            result.decision_confidence = blocking_score
+            result.ambiguity = 0.0
+            return result
+
         if buyer >= 0.70 and seller >= 0.70:
             result.contradiction = True
             result.contradiction_reason = (
@@ -62,15 +146,14 @@ class IntentEnsemble:
                 f"strong seller evidence ({seller:.2f})"
             )
 
-        # Ambiguity is highest when buyer/seller evidence is weak or similar.
         separation = abs(buyer - seller)
-        evidence_strength = max(buyer, seller)
+        strength = max(buyer, seller)
 
         result.ambiguity = max(
             0.0,
             min(
                 1.0,
-                1.0 - (0.65 * separation + 0.35 * evidence_strength),
+                1.0 - (0.65 * separation + 0.35 * strength),
             ),
         )
 
@@ -80,30 +163,31 @@ class IntentEnsemble:
             return result
 
         if buyer > seller and buyer >= 0.60:
-            buyer_scores = {
+            candidates = {
                 label: scores.get(label, 0.0)
                 for label in BUYER_LABELS
             }
+
             result.final_label = max(
-                buyer_scores,
-                key=buyer_scores.get,
+                candidates,
+                key=candidates.get,
             )
             result.decision_confidence = buyer
             return result
 
         if seller > buyer and seller >= 0.60:
-            seller_scores = {
+            candidates = {
                 label: scores.get(label, 0.0)
                 for label in SELLER_LABELS
             }
+
             result.final_label = max(
-                seller_scores,
-                key=seller_scores.get,
+                candidates,
+                key=candidates.get,
             )
             result.decision_confidence = seller
             return result
 
-        # Non-buyer informational classes can still win explicitly.
         other_scores = {
             label: score
             for label, score in scores.items()
@@ -121,6 +205,9 @@ class IntentEnsemble:
                 return result
 
         result.final_label = IntentLabel.UNKNOWN
-        result.decision_confidence = max(scores.values(), default=0.0)
+        result.decision_confidence = max(
+            scores.values(),
+            default=0.0,
+        )
 
         return result
