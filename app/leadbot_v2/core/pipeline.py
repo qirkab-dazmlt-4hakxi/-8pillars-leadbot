@@ -8,6 +8,7 @@ from leadbot_v2.enrichment import SignalExtractor
 from leadbot_v2.enrichment.public_contact import PublicContactExtractor
 from leadbot_v2.enrichment.reply_route import ReplyRouteResolver
 from leadbot_v2.enrichment.reddit import RedditEnricher
+from leadbot_v2.intelligence.geography import GeographicIntelligence
 from leadbot_v2.intelligence import (
     DomainReputationEngine,
     LeadRanker,
@@ -34,6 +35,7 @@ class LeadIntelligencePipeline:
         self.reddit = RedditEnricher()
         self.qualifier = EvidenceEngine()
         self.ranker = LeadRanker()
+        self.geo = GeographicIntelligence()
 
     def process_record(self, lead) -> PipelineResult:
         domain = self.domains.inspect(
@@ -59,6 +61,31 @@ class LeadIntelligencePipeline:
 
         # First evaluate the content without granting a reply route.
         self.public_contact.extract(lead)
+
+        geo = self.geo.analyze(
+            target_city=lead.city,
+            title=lead.title,
+            text=lead.raw_text,
+            url=lead.source_url,
+        )
+
+        if geo.in_market:
+            from leadbot_v2.core.models import EvidenceType
+            lead.add_evidence(
+                EvidenceType.LOCATION,
+                geo.reason,
+                geo.confidence,
+                source_url=lead.source_url,
+            )
+        elif geo.conflict:
+            from leadbot_v2.core.models import EvidenceType
+            lead.add_evidence(
+                EvidenceType.NEGATIVE,
+                geo.reason,
+                0.99,
+                source_url=lead.source_url,
+            )
+
         self.extractor.extract(lead)
 
         preliminary = self.qualifier.summarize(lead)
@@ -123,6 +150,31 @@ class LeadIntelligencePipeline:
 
         # First evaluate the content without granting a reply route.
         self.public_contact.extract(lead)
+
+        geo = self.geo.analyze(
+            target_city=lead.city,
+            title=lead.title,
+            text=lead.raw_text,
+            url=lead.source_url,
+        )
+
+        if geo.in_market:
+            from leadbot_v2.core.models import EvidenceType
+            lead.add_evidence(
+                EvidenceType.LOCATION,
+                geo.reason,
+                geo.confidence,
+                source_url=lead.source_url,
+            )
+        elif geo.conflict:
+            from leadbot_v2.core.models import EvidenceType
+            lead.add_evidence(
+                EvidenceType.NEGATIVE,
+                geo.reason,
+                0.99,
+                source_url=lead.source_url,
+            )
+
         self.extractor.extract(lead)
 
         preliminary = self.qualifier.summarize(lead)
