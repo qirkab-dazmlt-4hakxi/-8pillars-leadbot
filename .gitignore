@@ -15,3 +15,48 @@ venv/
 .env
 .env.*
 !.env.example
+
+# ==========================================================
+# GOAT OS - PRIVATE RUNTIME / SECRET BOUNDARY
+# ==========================================================
+
+# Environment secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Python environments
+.venv/
+**/.venv/
+venv/
+**/venv/
+
+# Runtime databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Credentials / cryptographic secrets
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.seed
+*.mnemonic
+
+secrets/
+**/secrets/
+credentials/
+**/credentials/
+wallet_private/
+**/wallet_private/
+
+# Runtime state
+data/v2_source_health.json
+data/v2_incidents.json
+app/data/v2_source_health.json
+app/data/v2_incidents.json
