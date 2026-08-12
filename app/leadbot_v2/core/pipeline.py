@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from leadbot_v2.core.models import LeadStage
+from leadbot_v2.core.models import EvidenceType, LeadStage
 from leadbot_v2.discovery.brave_adapter import from_legacy_lead
 from leadbot_v2.enrichment import SignalExtractor
 from leadbot_v2.enrichment.public_contact import PublicContactExtractor
 from leadbot_v2.enrichment.reply_route import ReplyRouteResolver
 from leadbot_v2.enrichment.reddit import RedditEnricher
 from leadbot_v2.intelligence.geography import GeographicIntelligence
+from leadbot_v2.intelligence.intent_fusion import IntentFusionEngine
+from leadbot_v2.intelligence.intent_ensemble import IntentLabel
 from leadbot_v2.intelligence import (
     DomainReputationEngine,
     LeadRanker,
@@ -36,6 +38,76 @@ class LeadIntelligencePipeline:
         self.qualifier = EvidenceEngine()
         self.ranker = LeadRanker()
         self.geo = GeographicIntelligence()
+        self.intent = IntentFusionEngine()
+
+    _INTENT_BLOCKS = frozenset({
+        IntentLabel.CONTRACTOR_AD,
+        IntentLabel.DIRECTORY,
+        IntentLabel.LEAD_RESELLER,
+        IntentLabel.MARKETING_CONTENT,
+        IntentLabel.DIY_INFORMATION,
+        IntentLabel.CLEANUP_ONLY,
+        IntentLabel.DEMOLITION_ONLY,
+        IntentLabel.NON_CONCRETE,
+        IntentLabel.STALE_REQUEST,
+        IntentLabel.LOCATION_CONFLICT,
+    })
+
+    def _intent_gate(self, lead) -> tuple[bool, str]:
+        text = f"{lead.title}\n{lead.raw_text}".strip()
+        fusion = self.intent.analyze(text)
+        assessment = fusion.assessment
+
+        label = getattr(
+            assessment.final_label,
+            "value",
+            str(assessment.final_label),
+        )
+
+        lead.metadata["intent"] = {
+            "label": label,
+            "buyer_probability": assessment.buyer_probability,
+            "seller_probability": assessment.seller_probability,
+            "ambiguity": assessment.ambiguity,
+            "contradiction": assessment.contradiction,
+            "quarantined": fusion.quarantined,
+            "reason": fusion.reason,
+        }
+
+        if fusion.quarantined:
+            lead.add_evidence(
+                EvidenceType.NEGATIVE,
+                f"intent quarantine: {fusion.reason}",
+                max(0.80, assessment.ambiguity),
+                source_url=lead.source_url,
+            )
+            return False, f"intent quarantine: {fusion.reason}"
+
+        if (
+            assessment.final_label in self._INTENT_BLOCKS
+            or assessment.seller_probability >= 0.80
+        ):
+            confidence = max(
+                assessment.seller_probability,
+                0.90,
+            )
+            lead.add_evidence(
+                EvidenceType.NEGATIVE,
+                f"blocked intent: {label}",
+                confidence,
+                source_url=lead.source_url,
+            )
+            return False, f"blocked intent: {label}"
+
+        if assessment.buyer_probability >= 0.70:
+            lead.add_evidence(
+                EvidenceType.BUYER_INTENT,
+                f"intent fusion buyer classification: {label}",
+                assessment.buyer_probability,
+                source_url=lead.source_url,
+            )
+
+        return True, "intent passed"
 
     def process_record(self, lead) -> PipelineResult:
         domain = self.domains.inspect(
@@ -53,6 +125,17 @@ class LeadIntelligencePipeline:
                 accepted=False,
                 suppressed=True,
                 reason=domain.reason,
+                record=lead,
+            )
+
+        intent_ok, intent_reason = self._intent_gate(lead)
+        if not intent_ok:
+            lead.stage = LeadStage.REJECTED
+            lead.rejection_reason = intent_reason
+            return PipelineResult(
+                accepted=False,
+                suppressed=True,
+                reason=intent_reason,
                 record=lead,
             )
 
@@ -142,6 +225,17 @@ class LeadIntelligencePipeline:
                 accepted=False,
                 suppressed=True,
                 reason=domain.reason,
+                record=lead,
+            )
+
+        intent_ok, intent_reason = self._intent_gate(lead)
+        if not intent_ok:
+            lead.stage = LeadStage.REJECTED
+            lead.rejection_reason = intent_reason
+            return PipelineResult(
+                accepted=False,
+                suppressed=True,
+                reason=intent_reason,
                 record=lead,
             )
 

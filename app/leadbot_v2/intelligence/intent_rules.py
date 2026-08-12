@@ -35,6 +35,30 @@ RULES = (
         0.91,
     ),
 
+    # Explicit acquisition / hiring intent.
+    # These expressions distinguish a customer hiring a contractor from
+    # a contractor advertising services.
+    RuleSpec(
+        IntentLabel.HOMEOWNER_READY_BUYER,
+        r"\b(?:i|we)\s+(?:want|need|would like)\s+to\s+hire\s+(?:another\s+|a\s+)?(?:professional\s+)?(?:concrete\s+)?contractor\b",
+        0.98,
+    ),
+    RuleSpec(
+        IntentLabel.HOMEOWNER_READY_BUYER,
+        r"\b(?:i(?:'m| am)|we(?:'re| are))\s+(?:still\s+)?looking\s+to\s+hire\s+(?:another\s+|a\s+)?(?:concrete\s+)?contractor\b",
+        0.97,
+    ),
+    RuleSpec(
+        IntentLabel.HOMEOWNER_READY_BUYER,
+        r"\b(?:i|we)\s+(?:still\s+)?need\s+(?:my|our|the)\b.{0,80}\b(?:driveway|patio|slab|sidewalk|foundation|concrete)\b.{0,80}\b(?:replaced|poured|installed|repaired|demolished|formed|finished)\b",
+        0.97,
+    ),
+    RuleSpec(
+        IntentLabel.HOMEOWNER_READY_BUYER,
+        r"\bneed\s+(?:someone\s+to\s+)?(?:demo|demolish|replace|pour|form|finish|install)\b.{0,80}\b(?:driveway|patio|slab|sidewalk|foundation|concrete)\b",
+        0.96,
+    ),
+
     # Recommendation intent
     RuleSpec(
         IntentLabel.RECOMMENDATION_REQUEST,
@@ -67,7 +91,31 @@ RULES = (
     ),
     RuleSpec(
         IntentLabel.CONTRACTOR_AD,
-        r"\b(?:free estimate|call us today|contact us today|licensed and insured)\b",
+        r"\b(?:call us today|contact us today|licensed and insured)\b",
+        0.96,
+    ),
+
+    # High-precision contractor / seller fingerprints.
+    # These intentionally require business-side language rather than
+    # generic mentions of contractors.
+    RuleSpec(
+        IntentLabel.CONTRACTOR_AD,
+        r"\bwe\s+(?:also\s+)?(?:provide|offer|install|serve|specialize(?:\s+in)?)\b",
+        0.97,
+    ),
+    RuleSpec(
+        IntentLabel.CONTRACTOR_AD,
+        r"\bwe\s+are\s+(?:a\s+|an\s+)?(?:professional\s+)?(?:concrete\s+)?contractors?\b",
+        0.98,
+    ),
+    RuleSpec(
+        IntentLabel.CONTRACTOR_AD,
+        r"\b(?:call\s+(?:us\s+)?today|contact\s+(?:us\s+)?today)\b",
+        0.98,
+    ),
+    RuleSpec(
+        IntentLabel.CONTRACTOR_AD,
+        r"\b(?:professional\s+concrete\s+contractors?|concrete\s+services|serving\s+(?:dfw|dallas|fort worth|north texas))\b",
         0.96,
     ),
 
@@ -76,6 +124,32 @@ RULES = (
         IntentLabel.DIY_INFORMATION,
         r"\b(?:how do i|can i pour|what mix|how thick|how much rebar)\b",
         0.90,
+    ),
+
+    # Explicit negation of a construction scope is stronger than
+    # generic phrases such as "need someone".
+    RuleSpec(
+        IntentLabel.NON_CONCRETE,
+        r"\bno\s+(?:concrete\s+)?(?:construction|replacement|repair|pouring|installation)(?:\s+or\s+(?:concrete\s+)?(?:construction|replacement|repair|pouring|installation))*\s+(?:needed|required|wanted)\b",
+        0.99,
+    ),
+    RuleSpec(
+        IntentLabel.NON_CONCRETE,
+        r"\b(?:not\s+looking\s+for|do(?:es)?\s+not\s+need|don't\s+need|do\s+not\s+need)\s+(?:any\s+)?(?:concrete\s+)?(?:work|construction|replacement|repair|contractor)\b",
+        0.99,
+    ),
+
+    # Cleanup language expressed as verbs, not only nouns such as
+    # "trash removal".
+    RuleSpec(
+        IntentLabel.CLEANUP_ONLY,
+        r"\b(?:remove|removing|haul|haul\s+away|pick\s+up|pickup|clean\s+up|clear)\s+(?:the\s+)?(?:trash|junk|debris|bags?)\b",
+        0.97,
+    ),
+    RuleSpec(
+        IntentLabel.CLEANUP_ONLY,
+        r"\b(?:trash|junk|debris|bags?)\s+(?:removal|pickup|cleaning|cleanup)\b",
+        0.97,
     ),
 
     # Cleanup-only work

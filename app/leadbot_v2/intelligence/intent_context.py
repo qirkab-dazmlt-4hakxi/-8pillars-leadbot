@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from leadbot_v2.intelligence.intent_ensemble import (
     IntentEvidence,
     IntentLabel,
@@ -46,12 +48,20 @@ LIFECYCLE = (
 SELLER_PRESSURE = (
     "free estimate",
     "call us today",
+    "call today",
     "contact us today",
     "licensed and insured",
     "our services",
     "our crews",
     "we specialize",
     "we provide",
+    "we offer",
+    "we also offer",
+    "professional concrete contractor",
+    "concrete services",
+    "serving dfw",
+    "serving dallas",
+    "serving north texas",
 )
 
 COMMERCIAL = (
@@ -74,7 +84,16 @@ class ContextIntentLayer:
         evidence: list[IntentEvidence] = []
 
         first = [x for x in FIRST_PERSON if x in t]
-        actions = [x for x in PROJECT_ACTIONS if x in t]
+        # Remove explicitly negated scope before looking for positive
+        # project actions. Example:
+        # "no concrete construction or replacement needed"
+        # must never make "replacement" positive evidence.
+        positive_scope = re.sub(
+            r"\b(?:no|not|without)\b.{0,60}?\b(?:needed|required|wanted)\b",
+            " ",
+            t,
+        )
+        actions = [x for x in PROJECT_ACTIONS if x in positive_scope]
         lifecycle = [x for x in LIFECYCLE if x in t]
         seller = [x for x in SELLER_PRESSURE if x in t]
         commercial = [x for x in COMMERCIAL if x in t]

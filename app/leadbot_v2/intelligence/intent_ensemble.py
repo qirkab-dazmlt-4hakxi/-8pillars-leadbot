@@ -130,10 +130,56 @@ class IntentEnsemble:
 
         blocking_score = blocking_scores[blocking_label]
 
-        # Strong exclusion evidence overrides generic language such as
-        # "need someone" when the actual scope is cleanup, DIY, stale,
-        # non-concrete, or geographically invalid.
-        if blocking_score >= 0.85:
+        # Some exclusions are absolute. Others are contextual.
+        #
+        # Example:
+        #   "remove debris first, then replace my driveway"
+        # is NOT a cleanup-only lead.
+        #
+        # Likewise:
+        #   "I considered DIY but decided against it and want to hire"
+        # is NOT a DIY-information lead.
+        hard_blocks = {
+            IntentLabel.NON_CONCRETE,
+            IntentLabel.STALE_REQUEST,
+            IntentLabel.LOCATION_CONFLICT,
+        }
+
+        contextual_blocks = {
+            IntentLabel.CLEANUP_ONLY,
+            IntentLabel.DIY_INFORMATION,
+            IntentLabel.DEMOLITION_ONLY,
+        }
+
+        # Generic phrases such as "need someone" must never override
+        # cleanup/DIY/demolition-only exclusions. A contextual exclusion
+        # may be overridden only by specific, high-confidence acquisition
+        # evidence or context reasoning proving a real construction scope.
+        specific_buyer = max(
+            (
+                item.confidence
+                for item in evidence
+                if item.label in BUYER_LABELS
+                and (
+                    item.source == "context_reasoning"
+                    or item.confidence >= 0.96
+                )
+            ),
+            default=0.0,
+        )
+
+        should_block = (
+            blocking_score >= 0.85
+            and (
+                blocking_label in hard_blocks
+                or (
+                    blocking_label in contextual_blocks
+                    and specific_buyer < 0.90
+                )
+            )
+        )
+
+        if should_block:
             result.final_label = blocking_label
             result.decision_confidence = blocking_score
             result.ambiguity = 0.0
