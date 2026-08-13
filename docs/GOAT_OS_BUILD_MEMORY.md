@@ -899,3 +899,89 @@ Immediate priorities:
 22. Multi-tenant commercialization
 
 Security, assurance, auditability and testing run across every phase.
+
+======================================================================
+21. COMPANY COMMUNICATIONS + INSIDER-RISK PROTECTION
+======================================================================
+
+GOAT must centralize authorized business communications so company
+knowledge is preserved.
+
+Target company communication architecture:
+
+- company business voice through GOAT gateway
+- company SMS through GOAT gateway
+- authorized company email ingestion
+- authorized web chat
+- CRM association
+- project association
+- opportunity association
+- contact association
+- call transcription
+- call summaries
+- business knowledge extraction
+- retention controls
+- access controls
+- recording notice/consent enforcement
+
+Company-managed endpoints require data-loss protection.
+
+Security signals include:
+
+- unauthorized external sharing
+- personal email forwarding of protected company data
+- USB copies
+- external cloud uploads
+- bulk downloads
+- customer list exports
+- proprietary source-code exports
+- screenshot/screen-recording policy violations where available
+- unauthorized printing
+- unauthorized clipboard transfer
+- privilege escalation
+- credential sharing
+- disabling security controls
+- log deletion attempts
+- mass record deletion
+- unauthorized vendor/payment changes
+- backup disable attempts
+
+GOAT must maintain investigation evidence with:
+
+- immutable timestamps
+- actor/device identity
+- source
+- evidence references
+- hash-chain integrity
+- access controls
+- retention policy
+- human investigation state
+
+GOAT must NOT use vague loyalty scoring or classify ordinary criticism,
+workplace complaints, wage discussions, protected activity, relationship
+issues, personality or political views as insider threats.
+
+Alerts must be conflict-aware.
+
+If the investigated subject would normally receive an executive/security
+alert, GOAT must exclude that subject and route the alert to other
+independent authorized recipients.
+
+The system is defensive:
+
+DETECT
+→ PRESERVE EVIDENCE
+→ SCORE OBJECTIVE SECURITY EVENTS
+→ ALERT
+→ INVESTIGATE
+→ QUARANTINE/REVOKE IF AUTHORIZED
+→ HUMAN DECISION
+
+No covert webcam surveillance.
+No covert microphone surveillance.
+No keylogging.
+No hidden monitoring of personal accounts/devices.
+No hack-back.
+
+Managed-device DLP, MDM restrictions, company-channel logging,
+access control and authorized security telemetry are the preferred controls.
