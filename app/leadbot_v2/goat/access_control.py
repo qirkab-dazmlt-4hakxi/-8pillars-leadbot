@@ -12,6 +12,8 @@ class Role(str, Enum):
     PROJECT_MANAGER = "project_manager"
     FIELD = "field"
     CLIENT = "client"
+    SECURITY_ANALYST = "security_analyst"
+    SECURITY_ADMIN = "security_admin"
 
 
 class Permission(str, Enum):
@@ -38,6 +40,14 @@ class Permission(str, Enum):
     EXECUTIVE_INTELLIGENCE = "executive_intelligence.use"
 
     USER_ADMIN = "users.admin"
+    SECURITY_READ = "security.read"
+    SECURITY_AUDIT_READ = "security.audit.read"
+    SECURITY_INCIDENT_WRITE = "security.incident.write"
+    SECURITY_SESSION_REVOKE = "security.session.revoke"
+    SECURITY_DEVICE_REVOKE = "security.device.revoke"
+    SECURITY_QUARANTINE = "security.quarantine"
+    SECURITY_BREAK_GLASS_REQUEST = "security.break_glass.request"
+
     SECURITY_ADMIN = "security.admin"
     SYSTEM_ADMIN = "system.admin"
 
@@ -90,6 +100,23 @@ ROLE_PERMISSIONS = {
         Permission.PROJECT_READ,
         Permission.CLIENT_PORTAL,
         Permission.COMMUNICATIONS,
+    }),
+
+    Role.SECURITY_ANALYST: frozenset({
+        Permission.SECURITY_READ,
+        Permission.SECURITY_AUDIT_READ,
+        Permission.SECURITY_INCIDENT_WRITE,
+    }),
+
+    Role.SECURITY_ADMIN: frozenset({
+        Permission.SECURITY_READ,
+        Permission.SECURITY_AUDIT_READ,
+        Permission.SECURITY_INCIDENT_WRITE,
+        Permission.SECURITY_SESSION_REVOKE,
+        Permission.SECURITY_DEVICE_REVOKE,
+        Permission.SECURITY_QUARANTINE,
+        Permission.SECURITY_BREAK_GLASS_REQUEST,
+        Permission.SECURITY_ADMIN,
     }),
 }
 
