@@ -1,0 +1,31 @@
+from .intelligence import (
+    PlanRevisionEngine,
+    RevisionAspect,
+    RevisionFinding,
+    RevisionImpactPlan,
+    RevisionIntegrityError,
+    RevisionRerunPlanner,
+    RevisionSeverity,
+    RerunStage,
+    SheetChangeKind,
+    SheetFingerprint,
+    SheetRevisionDelta,
+    extract_revision_markers,
+    fingerprint_page,
+)
+
+__all__ = [
+    "PlanRevisionEngine",
+    "RevisionAspect",
+    "RevisionFinding",
+    "RevisionImpactPlan",
+    "RevisionIntegrityError",
+    "RevisionRerunPlanner",
+    "RevisionSeverity",
+    "RerunStage",
+    "SheetChangeKind",
+    "SheetFingerprint",
+    "SheetRevisionDelta",
+    "extract_revision_markers",
+    "fingerprint_page",
+]
