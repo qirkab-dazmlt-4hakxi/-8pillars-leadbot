@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import unicodedata
+
+from dataclasses import asdict, is_dataclass
+from datetime import date, datetime
+from decimal import Decimal
+from enum import Enum
+
+
+TOKEN_RE = re.compile(
+    r"[A-Za-z0-9]+"
+)
+
+
+def normalize_text(
+    value: str,
+) -> str:
+    value = unicodedata.normalize(
+        "NFKC",
+        value or "",
+    )
+
+    return " ".join(
+        value.strip().split()
+    )
+
+
+def tokens(
+    value: str,
+):
+    return tuple(
+        token.lower()
+        for token
+        in TOKEN_RE.findall(
+            normalize_text(
+                value
+            )
+        )
+    )
+
+
+def slugify(
+    value: str,
+) -> str:
+    pieces = tokens(
+        value
+    )
+
+    return "-".join(
+        pieces
+    )
+
+
+def _default(
+    value,
+):
+    if isinstance(
+        value,
+        Decimal,
+    ):
+        return format(
+            value,
+            "f",
+        )
+
+    if isinstance(
+        value,
+        (
+            date,
+            datetime,
+        ),
+    ):
+        return value.isoformat()
+
+    if isinstance(
+        value,
+        Enum,
+    ):
+        return value.value
+
+    if is_dataclass(
+        value
+    ):
+        return asdict(
+            value
+        )
+
+    if isinstance(
+        value,
+        set,
+    ):
+        return sorted(
+            value
+        )
+
+    raise TypeError(
+        f"cannot serialize "
+        f"{type(value).__name__}"
+    )
+
+
+def canonical_json(
+    value,
+) -> str:
+    return json.dumps(
+        value,
+        default=_default,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(
+            ",",
+            ":",
+        ),
+    )
+
+
+def stable_hash(
+    value,
+) -> str:
+    return hashlib.sha256(
+        canonical_json(
+            value
+        ).encode(
+            "utf-8"
+        )
+    ).hexdigest()
